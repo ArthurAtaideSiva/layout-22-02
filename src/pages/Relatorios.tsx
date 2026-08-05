@@ -1,17 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts'
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart'
+import { BarChart, Bar, XAxis, YAxis, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 
 export default function Relatorios() {
   const perfData = [
@@ -34,6 +28,15 @@ export default function Relatorios() {
     { mes: 'Ago', valor: 21000 },
   ]
 
+  const perfConfig: ChartConfig = {
+    propostas: { label: 'Propostas', color: '#2563eb' },
+    fechadas: { label: 'Fechadas', color: '#16a34a' },
+  }
+
+  const comissaoConfig: ChartConfig = {
+    valor: { label: 'Comissões', color: '#1e3a8a' },
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -50,7 +53,7 @@ export default function Relatorios() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer config={perfConfig} className="h-full w-full">
               <BarChart data={perfData}>
                 <XAxis dataKey="mes" textAnchor="end" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
@@ -58,7 +61,7 @@ export default function Relatorios() {
                 <Bar dataKey="propostas" fill="#2563eb" name="Propostas" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="fechadas" fill="#16a34a" name="Fechadas" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -70,14 +73,14 @@ export default function Relatorios() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer config={comissaoConfig} className="h-full w-full">
               <LineChart data={comissaoData}>
                 <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Line type="monotone" dataKey="valor" stroke="#1e3a8a" strokeWidth={3} />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
