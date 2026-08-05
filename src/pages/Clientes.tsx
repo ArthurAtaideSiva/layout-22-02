@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getClientes, createCliente, Cliente } from '@/services/clientes'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
