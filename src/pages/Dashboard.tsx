@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { getOportunidades, Oportunidade } from '@/services/oportunidades'
 import { getInstalacoes, Instalacao } from '@/services/instalacoes'
