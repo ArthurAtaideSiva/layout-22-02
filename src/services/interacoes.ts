@@ -7,6 +7,7 @@ export interface Interacao {
   tipo: 'visita' | 'ligação' | 'WhatsApp' | 'email' | 'proposta'
   resultado?: string
   proximo_passo?: string
+  avaliacao?: string
   created?: string
 }
 

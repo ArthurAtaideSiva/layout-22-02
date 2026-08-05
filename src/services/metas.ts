@@ -14,5 +14,7 @@ export const getMetaAtual = async () => {
   return list[0] || null
 }
 
+export const getMetas = () => pb.collection('metas').getFullList<Meta>({ sort: '-created' })
+
 export const updateMeta = (id: string, data: Partial<Meta>) =>
   pb.collection('metas').update<Meta>(id, data)

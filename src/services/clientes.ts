@@ -12,6 +12,8 @@ export interface Cliente {
   aniversario?: string
   ultima_visita?: string
   ultimo_contato?: string
+  telefone_whatsapp?: string
+  data_ultimo_pedido?: string
   created?: string
   updated?: string
 }

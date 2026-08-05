@@ -10,6 +10,10 @@ export interface Notificacao {
     | 'proposta sem resposta'
     | 'troca de equipamento'
     | 'visita vencida'
+    | 'reativacao_30'
+    | 'reativacao_60'
+    | 'reativacao_90'
+    | 'followup_venda'
   destinatario?: string
   mensagem?: string
   data_disparo?: string
