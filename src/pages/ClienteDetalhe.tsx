@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getCliente, updateCliente, Cliente } from '@/services/clientes'
 import { getContatosByCliente, Contato } from '@/services/contatos'
 import { getInteracoesByCliente, createInteracao, Interacao } from '@/services/interacoes'
