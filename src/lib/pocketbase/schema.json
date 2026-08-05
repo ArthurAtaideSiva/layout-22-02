@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T23:03:01.563Z",
+  "generatedAt": "2026-08-05T23:10:11.557Z",
   "collections": [
     {
       "name": "users",
@@ -130,13 +130,26 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "telefone_whatsapp",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_ultimo_pedido",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_cli_status ON clientes (status)",
         "CREATE INDEX idx_cli_porte ON clientes (porte)",
         "CREATE INDEX idx_cli_regiao ON clientes (regiao)",
-        "CREATE INDEX idx_cli_contato ON clientes (ultimo_contato)"
+        "CREATE INDEX idx_cli_contato ON clientes (ultimo_contato)",
+        "CREATE INDEX `idx_cli_tel_whatsapp` ON `clientes` (telefone_whatsapp)"
       ]
     },
     {
@@ -261,6 +274,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "avaliacao",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -643,21 +662,6 @@
       },
       "fields": [
         {
-          "name": "tipo",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": [
-            "aniversário",
-            "cliente esquecido",
-            "instalação atrasada",
-            "chamado pendente",
-            "proposta sem resposta",
-            "troca de equipamento",
-            "visita vencida"
-          ]
-        },
-        {
           "name": "destinatario",
           "type": "relation",
           "required": false,
@@ -703,6 +707,25 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "aniversário",
+            "cliente esquecido",
+            "instalação atrasada",
+            "chamado pendente",
+            "proposta sem resposta",
+            "troca de equipamento",
+            "visita vencida",
+            "reativacao_30",
+            "reativacao_60",
+            "reativacao_90",
+            "followup_venda"
+          ]
         }
       ],
       "indexes": ["CREATE INDEX idx_notif_st ON notificacoes (status)"]

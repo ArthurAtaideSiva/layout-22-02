@@ -17,10 +17,7 @@ migrate(
     app.save(intCol)
 
     const notifCol = app.findCollectionByNameOrId('notificacoes')
-    const oldTipo = notifCol.fields.getByName('tipo')
-    if (oldTipo) {
-      notifCol.fields.remove(oldTipo)
-    }
+    notifCol.fields.removeByName('tipo')
     notifCol.fields.add(
       new SelectField({
         name: 'tipo',
@@ -44,21 +41,17 @@ migrate(
   },
   (app) => {
     const cliCol = app.findCollectionByNameOrId('clientes')
-    const tw = cliCol.fields.getByName('telefone_whatsapp')
-    if (tw) cliCol.fields.remove(tw)
-    const dup = cliCol.fields.getByName('data_ultimo_pedido')
-    if (dup) cliCol.fields.remove(dup)
+    cliCol.fields.removeByName('telefone_whatsapp')
+    cliCol.fields.removeByName('data_ultimo_pedido')
     cliCol.removeIndex('idx_cli_tel_whatsapp')
     app.save(cliCol)
 
     const intCol = app.findCollectionByNameOrId('interacoes')
-    const av = intCol.fields.getByName('avaliacao')
-    if (av) intCol.fields.remove(av)
+    intCol.fields.removeByName('avaliacao')
     app.save(intCol)
 
     const notifCol = app.findCollectionByNameOrId('notificacoes')
-    const currTipo = notifCol.fields.getByName('tipo')
-    if (currTipo) notifCol.fields.remove(currTipo)
+    notifCol.fields.removeByName('tipo')
     notifCol.fields.add(
       new SelectField({
         name: 'tipo',
