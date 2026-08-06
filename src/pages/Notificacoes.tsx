@@ -80,39 +80,39 @@ export default function Notificacoes() {
             description="Você está em dia! Nenhum alerta pendente."
           />
         ) : (
-        notifs.map((n) => {
-          const isLida = n.status === 'lida'
-          return (
-            <Card
-              key={n.id}
-              onClick={() => handleMarkRead(n.id)}
-              className={`cursor-pointer transition-all ${
-                isLida
-                  ? 'bg-white opacity-70 border-slate-200'
-                  : 'bg-blue-50/60 border-blue-200 shadow-sm font-semibold'
-              }`}
-            >
-              <CardContent className="p-3 flex items-start gap-3 text-xs">
-                <Bell
-                  className={`h-5 w-5 mt-0.5 shrink-0 ${isLida ? 'text-slate-400' : 'text-[#1e3a8a]'}`}
-                />
-                <div className="flex-1 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {n.tipo || 'alerta'}
-                    </Badge>
-                    <span className="text-[10px] text-slate-400">
-                      {n.data_disparo
-                        ? new Date(n.data_disparo).toLocaleDateString('pt-BR')
-                        : 'Hoje'}
-                    </span>
+          notifs.map((n) => {
+            const isLida = n.status === 'lida'
+            return (
+              <Card
+                key={n.id}
+                onClick={() => handleMarkRead(n.id)}
+                className={`cursor-pointer transition-all ${
+                  isLida
+                    ? 'bg-white opacity-70 border-slate-200'
+                    : 'bg-blue-50/60 border-blue-200 shadow-sm font-semibold'
+                }`}
+              >
+                <CardContent className="p-3 flex items-start gap-3 text-xs">
+                  <Bell
+                    className={`h-5 w-5 mt-0.5 shrink-0 ${isLida ? 'text-slate-400' : 'text-[#1e3a8a]'}`}
+                  />
+                  <div className="flex-1 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <Badge variant="outline" className="text-[10px] uppercase">
+                        {n.tipo || 'alerta'}
+                      </Badge>
+                      <span className="text-[10px] text-slate-400">
+                        {n.data_disparo
+                          ? new Date(n.data_disparo).toLocaleDateString('pt-BR')
+                          : 'Hoje'}
+                      </span>
+                    </div>
+                    <p className="text-slate-800 leading-relaxed">{n.mensagem}</p>
                   </div>
-                  <p className="text-slate-800 leading-relaxed">{n.mensagem}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            )
+          })
         )}
       </div>
     </div>

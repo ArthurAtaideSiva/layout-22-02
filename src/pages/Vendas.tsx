@@ -230,41 +230,43 @@ export default function Vendas() {
                 ) : items.length === 0 ? (
                   <p className="text-xs text-slate-400 py-2">Nenhuma oportunidade neste estágio.</p>
                 ) : (
-                items.map((op) => (
-                  <Card key={op.id} className="bg-white shadow-sm hover:border-slate-300">
-                    <CardContent className="p-3 text-xs space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-bold text-slate-900">
-                            {op.expand?.cliente?.nome || 'Cliente'}
-                          </p>
-                          <p className="text-slate-600">{op.equipamento}</p>
+                  items.map((op) => (
+                    <Card key={op.id} className="bg-white shadow-sm hover:border-slate-300">
+                      <CardContent className="p-3 text-xs space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-slate-900">
+                              {op.expand?.cliente?.nome || 'Cliente'}
+                            </p>
+                            <p className="text-slate-600">{op.equipamento}</p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px]">
+                            R$ {(op.valor_estimado || 0).toLocaleString('pt-BR')}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="text-[10px]">
-                          R$ {(op.valor_estimado || 0).toLocaleString('pt-BR')}
-                        </Badge>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500">
-                        <span>
-                          Comissão:{' '}
-                          <strong>R$ {(op.comissao_estimada || 0).toLocaleString('pt-BR')}</strong>
-                        </span>
-                        <select
-                          value={op.status}
-                          onChange={(e) => handleUpdateStatus(op.id, e.target.value)}
-                          className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5"
-                        >
-                          {stages.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                          <span>
+                            Comissão:{' '}
+                            <strong>
+                              R$ {(op.comissao_estimada || 0).toLocaleString('pt-BR')}
+                            </strong>
+                          </span>
+                          <select
+                            value={op.status}
+                            onChange={(e) => handleUpdateStatus(op.id, e.target.value)}
+                            className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5"
+                          >
+                            {stages.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
                 )}
               </div>
             </div>
