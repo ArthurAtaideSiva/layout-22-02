@@ -113,6 +113,7 @@ export default function Notificacoes() {
             </Card>
           )
         })}
+        )}
       </div>
     </div>
   )

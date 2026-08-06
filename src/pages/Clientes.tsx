@@ -156,7 +156,9 @@ export default function Clientes() {
                   aria-describedby={formErrors.nome ? 'err-nome' : undefined}
                 />
                 {formErrors.nome && (
-                  <p id="err-nome" className="text-xs text-red-500">{formErrors.nome}</p>
+                  <p id="err-nome" className="text-xs text-red-500">
+                    {formErrors.nome}
+                  </p>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -265,49 +267,51 @@ export default function Clientes() {
           />
         ) : (
           <>
-        {paginatedItems.map((cli) => {
-          const days = calcDaysWithoutContact(cli.ultimo_contato)
-          return (
-            <Card
-              key={cli.id}
-              onClick={() => navigate(`/clientes/${cli.id}`)}
-              className="cursor-pointer hover:border-blue-400 transition-all bg-white shadow-sm"
-            >
-              <CardContent className="p-3.5 space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="font-bold text-sm text-slate-900">{cli.nome}</h2>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" /> {cli.cidade || 'Não informada'} -{' '}
-                      {cli.estado || 'MA'}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={cli.status === 'Ativo' ? 'default' : 'secondary'}
-                    className="text-[10px]"
-                  >
-                    {cli.status}
-                  </Badge>
-                </div>
+            {paginatedItems.map((cli) => {
+              const days = calcDaysWithoutContact(cli.ultimo_contato)
+              return (
+                <Card
+                  key={cli.id}
+                  onClick={() => navigate(`/clientes/${cli.id}`)}
+                  className="cursor-pointer hover:border-blue-400 transition-all bg-white shadow-sm"
+                >
+                  <CardContent className="p-3.5 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="font-bold text-sm text-slate-900">{cli.nome}</h2>
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3 w-3" /> {cli.cidade || 'Não informada'} -{' '}
+                          {cli.estado || 'MA'}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={cli.status === 'Ativo' ? 'default' : 'secondary'}
+                        className="text-[10px]"
+                      >
+                        {cli.status}
+                      </Badge>
+                    </div>
 
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 text-slate-600">
-                  <span className="flex items-center gap-1">
-                    <Building className="h-3.5 w-3.5 text-slate-400" /> {cli.porte || 'Médio'}
-                  </span>
-                  {days > 30 ? (
-                    <span className="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <PhoneCall className="h-3 w-3" /> sem contato há {days} dias
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {days === 0 ? 'Hoje' : `${days}d atrás`}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 text-slate-600">
+                      <span className="flex items-center gap-1">
+                        <Building className="h-3.5 w-3.5 text-slate-400" /> {cli.porte || 'Médio'}
+                      </span>
+                      {days > 30 ? (
+                        <span className="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <PhoneCall className="h-3 w-3" /> sem contato há {days} dias
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {days === 0 ? 'Hoje' : `${days}d atrás`}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </>
+        )}
       </div>
     </div>
   )
