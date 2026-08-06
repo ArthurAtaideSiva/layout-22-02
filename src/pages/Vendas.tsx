@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   getOportunidades,
   updateOportunidade,
@@ -7,7 +7,7 @@ import {
 } from '@/services/oportunidades'
 import { getMetaAtual, Meta } from '@/services/metas'
 import { getClientes, Cliente } from '@/services/clientes'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -20,20 +20,20 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Plus, BadgeDollarSign, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, BadgeDollarSign } from 'lucide-react'
+import { LoadingCards } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { validateAndSanitize, oportunidadeSchema } from '@/lib/validation'
+import { toast } from 'sonner'
 
 export default function Vendas() {
   const [oportunidades, setOportunidades] = useState<Oportunidade[]>([])
   const [meta, setMeta] = useState<Meta | null>(null)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [openModal, setOpenModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const [form, setForm] = useState({
     cliente: '',
@@ -44,35 +44,56 @@ export default function Vendas() {
     prazo_resposta: '',
   })
 
-  const loadAll = () => {
-    getOportunidades().then(setOportunidades)
-    getMetaAtual().then(setMeta)
-    getClientes().then(setClientes)
-  }
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [o, m, c] = await Promise.all([getOportunidades(), getMetaAtual(), getClientes()])
+      setOportunidades(o)
+      setMeta(m)
+      setClientes(c)
+    } catch {
+      /* intentionally ignored */
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadAll()
-  }, [])
+  }, [loadAll])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.cliente) return
-    await createOportunidade({
-      cliente: form.cliente,
-      equipamento: form.equipamento,
-      status: form.status as any,
-      valor_estimado: Number(form.valor_estimado),
-      comissao_estimada: Number(form.comissao_estimada),
+    const result = validateAndSanitize(oportunidadeSchema, {
+      ...form,
       data_proposta: new Date().toISOString(),
       prazo_resposta: form.prazo_resposta || new Date(Date.now() + 14 * 86400000).toISOString(),
     })
-    setOpenModal(false)
-    loadAll()
+    if (!result.success) {
+      setFormErrors(result.errors)
+      return
+    }
+    setFormErrors({})
+    setCreating(true)
+    try {
+      await createOportunidade(result.data as Partial<Oportunidade>)
+      toast.success('Proposta criada com sucesso!')
+      setOpenModal(false)
+      loadAll()
+    } catch {
+      toast.error('Erro ao criar proposta.')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const handleUpdateStatus = async (id: string, newStatus: any) => {
-    await updateOportunidade(id, { status: newStatus })
-    loadAll()
+    try {
+      await updateOportunidade(id, { status: newStatus })
+      loadAll()
+    } catch {
+      toast.error('Erro ao atualizar status.')
+    }
   }
 
   const stages = ['Prospecção', 'Cotação enviada', 'Em análise', 'Fechado', 'Perdido']
@@ -123,7 +144,11 @@ export default function Vendas() {
                   value={form.equipamento}
                   onChange={(e) => setForm({ ...form, equipamento: e.target.value })}
                   placeholder="Ex: Fatiador / Câmara Frigorífica"
+                  aria-invalid={!!formErrors.equipamento}
                 />
+                {formErrors.equipamento && (
+                  <p className="text-xs text-red-500">{formErrors.equipamento}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -131,24 +156,34 @@ export default function Vendas() {
                   <Label className="text-xs">Valor Estimado (R$)</Label>
                   <Input
                     type="number"
+                    min="0"
                     value={form.valor_estimado}
                     onChange={(e) => setForm({ ...form, valor_estimado: Number(e.target.value) })}
+                    aria-invalid={!!formErrors.valor_estimado}
                   />
+                  {formErrors.valor_estimado && (
+                    <p className="text-xs text-red-500">{formErrors.valor_estimado}</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Comissão Estimada (R$)</Label>
                   <Input
                     type="number"
+                    min="0"
                     value={form.comissao_estimada}
                     onChange={(e) =>
                       setForm({ ...form, comissao_estimada: Number(e.target.value) })
                     }
+                    aria-invalid={!!formErrors.comissao_estimada}
                   />
+                  {formErrors.comissao_estimada && (
+                    <p className="text-xs text-red-500">{formErrors.comissao_estimada}</p>
+                  )}
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-[#1e3a8a]">
-                Salvar Proposta
+              <Button type="submit" disabled={creating} className="w-full bg-[#1e3a8a]">
+                {creating ? 'Salvando...' : 'Salvar Proposta'}
               </Button>
             </form>
           </DialogContent>
@@ -190,7 +225,12 @@ export default function Vendas() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {items.map((op) => (
+                {loading ? (
+                  <LoadingCards count={2} />
+                ) : items.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-2">Nenhuma oportunidade neste estágio.</p>
+                ) : (
+                items.map((op) => (
                   <Card key={op.id} className="bg-white shadow-sm hover:border-slate-300">
                     <CardContent className="p-3 text-xs space-y-2">
                       <div className="flex justify-between items-start">

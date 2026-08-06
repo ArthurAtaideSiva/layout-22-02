@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getInstalacoes, updateInstalacao, Instalacao } from '@/services/instalacoes'
 import { getChamados, updateChamado, createChamado, Chamado } from '@/services/chamados'
 import { getEquipamentos, Equipamento } from '@/services/equipamentos'
@@ -17,7 +17,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Wrench, Clock, AlertTriangle, Plus } from 'lucide-react'
+import { Wrench, Plus } from 'lucide-react'
+import { LoadingCards } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { validateAndSanitize, chamadoSchema } from '@/lib/validation'
+import { toast } from 'sonner'
 
 export default function Manutencao() {
   const [instalacoes, setInstalacoes] = useState<Instalacao[]>([])
@@ -25,6 +29,9 @@ export default function Manutencao() {
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [openChamadoModal, setOpenChamadoModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const [chamadoForm, setChamadoForm] = useState({
     cliente: '',
@@ -32,30 +39,54 @@ export default function Manutencao() {
     problema: '',
   })
 
-  const loadAll = () => {
-    getInstalacoes().then(setInstalacoes)
-    getChamados().then(setChamados)
-    getEquipamentos().then(setEquipamentos)
-    getClientes().then(setClientes)
-  }
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [inst, cham, eq, cli] = await Promise.all([
+        getInstalacoes(),
+        getChamados(),
+        getEquipamentos(),
+        getClientes(),
+      ])
+      setInstalacoes(inst)
+      setChamados(cham)
+      setEquipamentos(eq)
+      setClientes(cli)
+    } catch {
+      /* intentionally ignored */
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadAll()
-  }, [])
+  }, [loadAll])
 
   const handleCreateChamado = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!chamadoForm.cliente) return
-    await createChamado({
-      cliente: chamadoForm.cliente,
-      equipamento: chamadoForm.equipamento,
-      problema: chamadoForm.problema,
+    const result = validateAndSanitize(chamadoSchema, {
+      ...chamadoForm,
       data_abertura: new Date().toISOString(),
       status: 'Aberto',
     })
-    setOpenChamadoModal(false)
-    setChamadoForm({ cliente: '', equipamento: '', problema: '' })
-    loadAll()
+    if (!result.success) {
+      setFormErrors(result.errors)
+      return
+    }
+    setFormErrors({})
+    setCreating(true)
+    try {
+      await createChamado(result.data as Partial<Chamado>)
+      toast.success('Chamado registrado com sucesso!')
+      setOpenChamadoModal(false)
+      setChamadoForm({ cliente: '', equipamento: '', problema: '' })
+      loadAll()
+    } catch {
+      toast.error('Erro ao registrar chamado.')
+    } finally {
+      setCreating(false)
+    }
   }
 
   return (
@@ -79,45 +110,54 @@ export default function Manutencao() {
         </TabsList>
 
         <TabsContent value="instalacoes" className="space-y-3 pt-3">
-          {instalacoes.map((item) => (
-            <Card key={item.id} className="bg-white shadow-sm">
-              <CardContent className="p-3 text-xs space-y-1.5">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-slate-900">
-                      {item.expand?.cliente?.nome || 'Supermercado'}
-                    </p>
-                    <p className="text-slate-600">{item.equipamento}</p>
+          {loading ? (
+            <LoadingCards count={3} />
+          ) : instalacoes.length === 0 ? (
+            <EmptyState
+              icon={<Wrench className="h-10 w-10" />}
+              title="Nenhuma instalação registrada"
+            />
+          ) : (
+            instalacoes.map((item) => (
+              <Card key={item.id} className="bg-white shadow-sm">
+                <CardContent className="p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-slate-900">
+                        {item.expand?.cliente?.nome || 'Supermercado'}
+                      </p>
+                      <p className="text-slate-600">{item.equipamento}</p>
+                    </div>
+                    <Badge
+                      variant={item.status === 'Atrasada' ? 'destructive' : 'outline'}
+                      className="text-[10px]"
+                    >
+                      {item.status}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={item.status === 'Atrasada' ? 'destructive' : 'outline'}
-                    className="text-[10px]"
-                  >
-                    {item.status}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1 border-t border-slate-100">
-                  <span>
-                    Prazo combinado:{' '}
-                    {item.prazo ? new Date(item.prazo).toLocaleDateString('pt-BR') : 'N/D'}
-                  </span>
-                  <select
-                    value={item.status}
-                    onChange={async (e) => {
-                      await updateInstalacao(item.id, { status: e.target.value as any })
-                      loadAll()
-                    }}
-                    className="text-[10px] bg-slate-50 border rounded px-1"
-                  >
-                    <option value="Solicitada">Solicitada</option>
-                    <option value="Agendada">Agendada</option>
-                    <option value="Concluída">Concluída</option>
-                    <option value="Atrasada">Atrasada</option>
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1 border-t border-slate-100">
+                    <span>
+                      Prazo combinado:{' '}
+                      {item.prazo ? new Date(item.prazo).toLocaleDateString('pt-BR') : 'N/D'}
+                    </span>
+                    <select
+                      value={item.status}
+                      onChange={async (e) => {
+                        await updateInstalacao(item.id, { status: e.target.value as any })
+                        loadAll()
+                      }}
+                      className="text-[10px] bg-slate-50 border rounded px-1"
+                    >
+                      <option value="Solicitada">Solicitada</option>
+                      <option value="Agendada">Agendada</option>
+                      <option value="Concluída">Concluída</option>
+                      <option value="Atrasada">Atrasada</option>
+                    </select>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="chamados" className="space-y-3 pt-3">
@@ -166,66 +206,85 @@ export default function Manutencao() {
                       required
                       value={chamadoForm.problema}
                       onChange={(e) => setChamadoForm({ ...chamadoForm, problema: e.target.value })}
+                      aria-invalid={!!formErrors.problema}
                     />
+                    {formErrors.problema && (
+                      <p className="text-xs text-red-500">{formErrors.problema}</p>
+                    )}
                   </div>
-                  <Button type="submit" className="w-full bg-[#1e3a8a]">
-                    Registrar Chamado
+                  <Button type="submit" disabled={creating} className="w-full bg-[#1e3a8a]">
+                    {creating ? 'Registrando...' : 'Registrar Chamado'}
                   </Button>
                 </form>
               </DialogContent>
             </Dialog>
           </div>
 
-          {chamados.map((item) => (
-            <Card key={item.id} className="bg-white shadow-sm">
-              <CardContent className="p-3 text-xs space-y-1.5">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-slate-900">{item.expand?.cliente?.nome}</p>
-                    <p className="text-slate-600">{item.equipamento}</p>
+          {loading ? (
+            <LoadingCards count={3} />
+          ) : chamados.length === 0 ? (
+            <EmptyState icon={<Wrench className="h-10 w-10" />} title="Nenhum chamado aberto" />
+          ) : (
+            chamados.map((item) => (
+              <Card key={item.id} className="bg-white shadow-sm">
+                <CardContent className="p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-slate-900">{item.expand?.cliente?.nome}</p>
+                      <p className="text-slate-600">{item.equipamento}</p>
+                    </div>
+                    <Badge
+                      variant={item.status === 'Aberto' ? 'destructive' : 'secondary'}
+                      className="text-[10px]"
+                    >
+                      {item.status}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={item.status === 'Aberto' ? 'destructive' : 'secondary'}
-                    className="text-[10px]"
-                  >
-                    {item.status}
-                  </Badge>
-                </div>
-                <p className="text-slate-700 bg-slate-50 p-2 rounded text-[11px]">
-                  {item.problema}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+                  <p className="text-slate-700 bg-slate-50 p-2 rounded text-[11px]">
+                    {item.problema}
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="parque" className="space-y-3 pt-3">
-          {equipamentos.map((item) => (
-            <Card key={item.id} className="bg-white shadow-sm">
-              <CardContent className="p-3 text-xs space-y-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-slate-900">{item.modelo}</p>
-                    <p className="text-slate-500">
-                      {item.expand?.cliente?.nome} ({item.marca})
-                    </p>
+          {loading ? (
+            <LoadingCards count={3} />
+          ) : equipamentos.length === 0 ? (
+            <EmptyState
+              icon={<Wrench className="h-10 w-10" />}
+              title="Nenhum equipamento cadastrado"
+            />
+          ) : (
+            equipamentos.map((item) => (
+              <Card key={item.id} className="bg-white shadow-sm">
+                <CardContent className="p-3 text-xs space-y-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-slate-900">{item.modelo}</p>
+                      <p className="text-slate-500">
+                        {item.expand?.cliente?.nome} ({item.marca})
+                      </p>
+                    </div>
+                    <Badge
+                      variant={item.status === 'Troca recomendada' ? 'destructive' : 'outline'}
+                      className="text-[10px]"
+                    >
+                      {item.status}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={item.status === 'Troca recomendada' ? 'destructive' : 'outline'}
-                    className="text-[10px]"
-                  >
-                    {item.status}
-                  </Badge>
-                </div>
-                <p className="text-slate-500 text-[11px]">
-                  Expiração estimada:{' '}
-                  {item.data_expiracao
-                    ? new Date(item.data_expiracao).toLocaleDateString('pt-BR')
-                    : 'N/D'}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+                  <p className="text-slate-500 text-[11px]">
+                    Expiração estimada:{' '}
+                    {item.data_expiracao
+                      ? new Date(item.data_expiracao).toLocaleDateString('pt-BR')
+                      : 'N/D'}
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
       </Tabs>
     </div>

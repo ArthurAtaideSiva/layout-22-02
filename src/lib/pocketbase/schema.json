@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T23:10:11.557Z",
+  "generatedAt": "2026-08-06T00:28:06.454Z",
   "collections": [
     {
       "name": "users",
@@ -365,7 +365,9 @@
       ],
       "indexes": [
         "CREATE INDEX idx_opo_cli ON oportunidades (cliente)",
-        "CREATE INDEX idx_opo_status ON oportunidades (status)"
+        "CREATE INDEX idx_opo_status ON oportunidades (status)",
+        "CREATE INDEX `idx_opo_follow` ON `oportunidades` (follow_up_pendente)",
+        "CREATE INDEX `idx_opo_prazo` ON `oportunidades` (prazo_resposta)"
       ]
     },
     {
@@ -440,7 +442,8 @@
       ],
       "indexes": [
         "CREATE INDEX idx_eq_cli ON equipamentos (cliente)",
-        "CREATE INDEX idx_eq_exp ON equipamentos (data_expiracao)"
+        "CREATE INDEX idx_eq_exp ON equipamentos (data_expiracao)",
+        "CREATE INDEX `idx_eq_status` ON `equipamentos` (status)"
       ]
     },
     {
@@ -507,7 +510,11 @@
           "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": ["CREATE INDEX idx_inst_status ON instalacoes (status)"]
+      "indexes": [
+        "CREATE INDEX idx_inst_status ON instalacoes (status)",
+        "CREATE INDEX `idx_inst_cli` ON `instalacoes` (cliente)",
+        "CREATE INDEX `idx_inst_prazo` ON `instalacoes` (prazo)"
+      ]
     },
     {
       "name": "chamados",
@@ -579,7 +586,11 @@
           "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": ["CREATE INDEX idx_cham_status ON chamados (status)"]
+      "indexes": [
+        "CREATE INDEX idx_cham_status ON chamados (status)",
+        "CREATE INDEX `idx_cham_cli` ON `chamados` (cliente)",
+        "CREATE INDEX `idx_cham_abertura` ON `chamados` (data_abertura)"
+      ]
     },
     {
       "name": "visitas",
@@ -647,7 +658,8 @@
       ],
       "indexes": [
         "CREATE INDEX idx_vis_data ON visitas (data)",
-        "CREATE INDEX idx_vis_reg ON visitas (regiao)"
+        "CREATE INDEX idx_vis_reg ON visitas (regiao)",
+        "CREATE INDEX `idx_vis_cli` ON `visitas` (cliente)"
       ]
     },
     {
@@ -728,7 +740,11 @@
           ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_notif_st ON notificacoes (status)"]
+      "indexes": [
+        "CREATE INDEX idx_notif_st ON notificacoes (status)",
+        "CREATE INDEX `idx_notif_cli` ON `notificacoes` (cliente)",
+        "CREATE INDEX `idx_notif_dest` ON `notificacoes` (destinatario)"
+      ]
     },
     {
       "name": "metas",
@@ -787,7 +803,7 @@
           "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": []
+      "indexes": ["CREATE INDEX `idx_meta_periodo` ON `metas` (periodo)"]
     },
     {
       "name": "conversas_whatsapp",
@@ -860,7 +876,10 @@
           "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_conv_tel` ON `conversas_whatsapp` (telefone)",
+        "CREATE INDEX `idx_conv_data` ON `conversas_whatsapp` (data_hora)"
+      ]
     }
   ]
 }

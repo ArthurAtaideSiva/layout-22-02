@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   getNotificacoes,
   marcarComoLida,
@@ -9,14 +9,26 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bell, CheckCheck, Cake, Clock, AlertTriangle, Wrench } from 'lucide-react'
+import { Bell, CheckCheck } from 'lucide-react'
+import { LoadingCards } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { toast } from 'sonner'
 
 export default function Notificacoes() {
   const [notifs, setNotifs] = useState<Notificacao[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const loadNotifs = () => {
-    getNotificacoes().then(setNotifs)
-  }
+  const loadNotifs = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getNotificacoes()
+      setNotifs(data)
+    } catch {
+      /* intentionally ignored */
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadNotifs()
@@ -27,13 +39,22 @@ export default function Notificacoes() {
   })
 
   const handleMarkRead = async (id: string) => {
-    await marcarComoLida(id)
-    loadNotifs()
+    try {
+      await marcarComoLida(id)
+      loadNotifs()
+    } catch {
+      toast.error('Erro ao marcar notificação.')
+    }
   }
 
   const handleMarkAllRead = async () => {
-    await marcarTodasLidas(notifs)
-    loadNotifs()
+    try {
+      await marcarTodasLidas(notifs)
+      toast.success('Todas as notificações foram marcadas como lidas.')
+      loadNotifs()
+    } catch {
+      toast.error('Erro ao marcar notificações.')
+    }
   }
 
   return (
@@ -50,7 +71,16 @@ export default function Notificacoes() {
       </div>
 
       <div className="space-y-2">
-        {notifs.map((n) => {
+        {loading ? (
+          <LoadingCards count={3} />
+        ) : notifs.length === 0 ? (
+          <EmptyState
+            icon={<Bell className="h-10 w-10" />}
+            title="Sem notificações"
+            description="Você está em dia! Nenhum alerta pendente."
+          />
+        ) : (
+        notifs.map((n) => {
           const isLida = n.status === 'lida'
           return (
             <Card

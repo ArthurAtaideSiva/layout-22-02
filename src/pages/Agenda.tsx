@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getVisitas, createVisita, Visita } from '@/services/visitas'
 import { getClientes, Cliente } from '@/services/clientes'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,11 +15,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Calendar as CalendarIcon, MapPin, Plus, Route } from 'lucide-react'
+import { LoadingCards } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { validateAndSanitize, visitaSchema } from '@/lib/validation'
+import { toast } from 'sonner'
 
 export default function Agenda() {
   const [visitas, setVisitas] = useState<Visita[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [openModal, setOpenModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'lista' | 'rota'>('lista')
 
   const [form, setForm] = useState({
@@ -30,28 +37,45 @@ export default function Agenda() {
     regiao: 'Norte / Nordeste',
   })
 
-  const loadAll = () => {
-    getVisitas().then(setVisitas)
-    getClientes().then(setClientes)
-  }
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [v, c] = await Promise.all([getVisitas(), getClientes()])
+      setVisitas(v)
+      setClientes(c)
+    } catch {
+      /* intentionally ignored */
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadAll()
-  }, [])
+  }, [loadAll])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.cliente) return
-    await createVisita({
-      cliente: form.cliente,
+    const result = validateAndSanitize(visitaSchema, {
+      ...form,
       data: new Date().toISOString(),
-      motivo: form.motivo as any,
-      resultado: form.resultado,
-      proximos_passos: form.proximos_passos,
-      regiao: form.regiao,
     })
-    setOpenModal(false)
-    loadAll()
+    if (!result.success) {
+      setFormErrors(result.errors)
+      return
+    }
+    setFormErrors({})
+    setCreating(true)
+    try {
+      await createVisita(result.data as Partial<Visita>)
+      toast.success('Visita registrada com sucesso!')
+      setOpenModal(false)
+      loadAll()
+    } catch {
+      toast.error('Erro ao registrar visita.')
+    } finally {
+      setCreating(false)
+    }
   }
 
   return (
@@ -96,11 +120,15 @@ export default function Agenda() {
                   required
                   value={form.resultado}
                   onChange={(e) => setForm({ ...form, resultado: e.target.value })}
+                  aria-invalid={!!formErrors.resultado}
                 />
+                {formErrors.resultado && (
+                  <p className="text-xs text-red-500">{formErrors.resultado}</p>
+                )}
               </div>
 
-              <Button type="submit" className="w-full bg-[#1e3a8a]">
-                Salvar Registro
+              <Button type="submit" disabled={creating} className="w-full bg-[#1e3a8a]">
+                {creating ? 'Salvando...' : 'Salvar Registro'}
               </Button>
             </form>
           </DialogContent>
@@ -127,24 +155,34 @@ export default function Agenda() {
       </div>
 
       <div className="space-y-3">
-        {visitas.map((v) => (
-          <Card key={v.id} className="bg-white shadow-sm">
-            <CardContent className="p-3 text-xs space-y-1.5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold text-slate-900">
-                    {v.expand?.cliente?.nome || 'Supermercado'}
-                  </p>
-                  <p className="text-slate-500 flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> Região: {v.regiao || 'Norte / Nordeste'}
-                  </p>
+        {loading ? (
+          <LoadingCards count={3} />
+        ) : visitas.length === 0 ? (
+          <EmptyState
+            icon={<CalendarIcon className="h-10 w-10" />}
+            title="Nenhuma visita registrada"
+            description="Registre sua primeira visita comercial."
+          />
+        ) : (
+          visitas.map((v) => (
+            <Card key={v.id} className="bg-white shadow-sm">
+              <CardContent className="p-3 text-xs space-y-1.5">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-slate-900">
+                      {v.expand?.cliente?.nome || 'Supermercado'}
+                    </p>
+                    <p className="text-slate-500 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> Região: {v.regiao || 'Norte / Nordeste'}
+                    </p>
+                  </div>
+                  <Badge className="text-[10px] uppercase">{v.motivo || 'comercial'}</Badge>
                 </div>
-                <Badge className="text-[10px] uppercase">{v.motivo || 'comercial'}</Badge>
-              </div>
-              <p className="text-slate-700 bg-slate-50 p-2 rounded">{v.resultado}</p>
-            </CardContent>
-          </Card>
-        ))}
+                <p className="text-slate-700 bg-slate-50 p-2 rounded">{v.resultado}</p>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   )

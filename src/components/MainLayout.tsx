@@ -119,8 +119,9 @@ export function MainLayout() {
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={() => navigate('/notificacoes')}
-              className="relative p-2 rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
+              className="relative p-2 rounded-full hover:bg-slate-100 text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
               title="Notificações"
+              aria-label={`Notificações${unreadCount > 0 ? `, ${unreadCount} não lidas` : ''}`}
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -172,8 +173,9 @@ export function MainLayout() {
       {/* Floating Action Button (FAB Assistant) */}
       <button
         onClick={() => navigate('/chat')}
-        className="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 z-40 h-14 w-14 rounded-full bg-[#25d366] hover:bg-[#1ebf58] text-white shadow-lg flex items-center justify-center transition-transform active:scale-95 animate-bounce"
+        className="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 z-40 h-14 w-14 rounded-full bg-[#25d366] hover:bg-[#1ebf58] text-white shadow-lg flex items-center justify-center transition-transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
         title="Assistente Comercial Chat"
+        aria-label="Abrir assistente comercial"
       >
         <BotMessageSquare className="h-7 w-7" />
       </button>

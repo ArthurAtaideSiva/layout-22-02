@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getClientes, createCliente, Cliente } from '@/services/clientes'
 import { Input } from '@/components/ui/input'
@@ -20,15 +20,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Plus, MapPin, Building, Calendar, PhoneCall } from 'lucide-react'
+import { Search, Plus, MapPin, Building, Calendar, PhoneCall, Users } from 'lucide-react'
+import { useDebounce } from '@/hooks/use-debounce'
+import { usePagination } from '@/hooks/use-pagination'
+import { LoadingCards } from '@/components/LoadingState'
+import { EmptyState, ErrorState } from '@/components/EmptyState'
+import { Pagination } from '@/components/Pagination'
+import { validateAndSanitize, clienteSchema } from '@/lib/validation'
+import { toast } from 'sonner'
 
 export default function Clientes() {
   const navigate = useNavigate()
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [search, setSearch] = useState('')
   const [porteFilter, setPorteFilter] = useState<string>('todos')
   const [statusFilter, setStatusFilter] = useState<string>('todos')
   const [openModal, setOpenModal] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -40,45 +51,74 @@ export default function Clientes() {
     status: 'Ativo',
   })
 
-  const loadClientes = () => {
-    getClientes().then(setClientes)
-  }
+  const debouncedSearch = useDebounce(search, 300)
+
+  const loadClientes = useCallback(async () => {
+    setLoading(true)
+    setError(false)
+    try {
+      const data = await getClientes()
+      setClientes(data)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadClientes()
-  }, [])
+  }, [loadClientes])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nome) return
-    await createCliente({
+    const payload = {
       ...formData,
-      porte: formData.porte as any,
-      status: formData.status as any,
+      porte: formData.porte,
+      status: formData.status,
       ultimo_contato: new Date().toISOString(),
-    })
-    setOpenModal(false)
-    setFormData({
-      nome: '',
-      cnpj: '',
-      porte: 'Médio',
-      cidade: '',
-      estado: 'MA',
-      regiao: 'Norte / Nordeste',
-      status: 'Ativo',
-    })
-    loadClientes()
+    }
+    const result = validateAndSanitize(clienteSchema, payload)
+    if (!result.success) {
+      setFormErrors(result.errors)
+      return
+    }
+    setFormErrors({})
+    setCreating(true)
+    try {
+      await createCliente(result.data as Partial<Cliente>)
+      toast.success('Cliente cadastrado com sucesso!')
+      setOpenModal(false)
+      setFormData({
+        nome: '',
+        cnpj: '',
+        porte: 'Médio',
+        cidade: '',
+        estado: 'MA',
+        regiao: 'Norte / Nordeste',
+        status: 'Ativo',
+      })
+      loadClientes()
+    } catch {
+      toast.error('Erro ao cadastrar cliente. Verifique os dados.')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const filtered = clientes.filter((c) => {
+    const q = debouncedSearch.toLowerCase()
     const matchSearch =
-      c.nome.toLowerCase().includes(search.toLowerCase()) ||
-      (c.cidade && c.cidade.toLowerCase().includes(search.toLowerCase())) ||
-      (c.cnpj && c.cnpj.includes(search))
+      c.nome.toLowerCase().includes(q) ||
+      (c.cidade && c.cidade.toLowerCase().includes(q)) ||
+      (c.cnpj && c.cnpj.includes(debouncedSearch))
     const matchPorte = porteFilter === 'todos' || c.porte === porteFilter
     const matchStatus = statusFilter === 'todos' || c.status === statusFilter
     return matchSearch && matchPorte && matchStatus
   })
+
+  const { page, totalPages, paginatedItems, hasPrev, hasNext, totalItems, prevPage, nextPage } =
+    usePagination(filtered, { pageSize: 15 })
 
   const calcDaysWithoutContact = (dateStr?: string) => {
     if (!dateStr) return 999
@@ -112,7 +152,12 @@ export default function Clientes() {
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Ex: Supermercado Mateus"
+                  aria-invalid={!!formErrors.nome}
+                  aria-describedby={formErrors.nome ? 'err-nome' : undefined}
                 />
+                {formErrors.nome && (
+                  <p id="err-nome" className="text-xs text-red-500">{formErrors.nome}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -158,8 +203,8 @@ export default function Clientes() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-[#1e3a8a] mt-4">
-                Salvar Cliente
+              <Button type="submit" disabled={creating} className="w-full bg-[#1e3a8a] mt-4">
+                {creating ? 'Salvando...' : 'Salvar Cliente'}
               </Button>
             </form>
           </DialogContent>
@@ -208,7 +253,19 @@ export default function Clientes() {
 
       {/* Client List */}
       <div className="space-y-2.5">
-        {filtered.map((cli) => {
+        {loading ? (
+          <LoadingCards count={4} />
+        ) : error ? (
+          <ErrorState onRetry={loadClientes} />
+        ) : paginatedItems.length === 0 ? (
+          <EmptyState
+            icon={<Users className="h-10 w-10" />}
+            title="Nenhum cliente encontrado"
+            description="Ajuste os filtros ou cadastre um novo cliente."
+          />
+        ) : (
+          <>
+        {paginatedItems.map((cli) => {
           const days = calcDaysWithoutContact(cli.ultimo_contato)
           return (
             <Card

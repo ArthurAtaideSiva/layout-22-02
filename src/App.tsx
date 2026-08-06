@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Clientes from './pages/Clientes'
@@ -29,28 +30,30 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            element={
-              <ProtectedRoute>
-                <MainLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/clientes/:id" element={<ClienteDetalhe />} />
-            <Route path="/vendas" element={<Vendas />} />
-            <Route path="/manutencao" element={<Manutencao />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/relatorios" element={<Relatorios />} />
-            <Route path="/notificacoes" element={<Notificacoes />} />
-            <Route path="/chat" element={<Chat />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <MainLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/clientes/:id" element={<ClienteDetalhe />} />
+              <Route path="/vendas" element={<Vendas />} />
+              <Route path="/manutencao" element={<Manutencao />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/notificacoes" element={<Notificacoes />} />
+              <Route path="/chat" element={<Chat />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
   </BrowserRouter>

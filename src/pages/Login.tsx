@@ -81,7 +81,8 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1e3a8a] hover:bg-[#172a63] font-semibold py-5"
+              className="w-full bg-[#1e3a8a] hover:bg-[#172a63] font-semibold py-5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              aria-busy={loading}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Entrar no Sistema'}
             </Button>
